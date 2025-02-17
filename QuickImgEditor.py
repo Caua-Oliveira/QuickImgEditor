@@ -196,15 +196,10 @@ class ImageEditorApp(ctk.CTk):
         self.control_frame = ctk.CTkFrame(self)
         self.control_frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
 
-        # File operations
         self.create_action_buttons()
-        # Processing buttons
         self.create_processing_buttons()
-        # Resize controls
         self.create_resize_controls()
-        # Scale controls
         self.create_scale_controls()
-        # Export buttons
         self.create_export_buttons()
 
     def create_action_buttons(self):
@@ -436,11 +431,6 @@ class ImageEditorApp(ctk.CTk):
         if getattr(sys, 'frozen', False):
             return sys.executable
         return os.path.realpath(sys.argv[0])
-
-    import os
-    import sys
-    import shutil
-    import logging
 
     def set_startup(self, enable: bool):
         try:
