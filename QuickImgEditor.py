@@ -1,4 +1,3 @@
-import shutil
 import tkinter as tk
 from win32com.client import Dispatch
 from tkinter import filedialog
@@ -14,8 +13,9 @@ import win32clipboard
 from PIL import Image, ImageGrab, ImageOps
 from datetime import datetime
 import json
-import winreg
 from typing import Optional
+
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
