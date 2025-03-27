@@ -115,7 +115,7 @@ class TrayManager:
             pystray.MenuItem('Options', self.show_options),
             pystray.MenuItem('Exit', self.exit_app),
         )
-        image = Image.open("icon.ico")
+        image = Image.open("../icon.ico")
         self.icon = pystray.Icon("image_editor", image, "Image Editor", menu)
 
     def run(self):
@@ -175,7 +175,7 @@ class ImageEditorApp(ctk.CTk):
 
     def load_theme(self):
         try:
-            theme_path = 'theme.json' if os.path.exists('theme.json') else None
+            theme_path = 'theme.json' if os.path.exists('../theme.json') else None
             if theme_path:
                 ctk.set_default_color_theme(theme_path)
         except Exception as e:
