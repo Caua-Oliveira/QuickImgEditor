@@ -17,7 +17,8 @@ class TrayManager:
             pystray.MenuItem('Options', self.show_options),
             pystray.MenuItem('Exit', self.exit_app),
         )
-        image = Image.open('../resources/icon.ico')
+        icon_path = os.path.join(os.path.dirname(__file__), '../resources/icon.ico')
+        image = Image.open(icon_path)
         self.icon = pystray.Icon('image_editor', image, 'Image Editor', menu)
 
     def run(self):
