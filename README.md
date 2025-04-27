@@ -39,3 +39,7 @@ Ensure you have Python 3.7 or higher installed. The following Python packages ar
 - [keyboard](https://github.com/boppreh/keyboard)
 
 
+![image](https://github.com/user-attachments/assets/33f7fa77-3f00-415b-a543-e9aa01df4f97)
+
+
+
