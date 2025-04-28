@@ -86,7 +86,7 @@ class ImageEditorUI(ctk.CTk):
 
         effects = [
             ("Convert to Grayscale", self.convert_to_grayscale),
-            ("Low Quality", self.low_quality)
+            ("Lower Quality", self.lower_quality)
         ]
         for text, cmd in effects:
             btn = ctk.CTkButton(processing_frame, text=text, command=cmd)
@@ -205,7 +205,7 @@ class ImageEditorUI(ctk.CTk):
         self._update_ui()
         self.update_status("Converted to grayscale")
 
-    def low_quality(self):
+    def lower_quality(self):
         if not self.base_image:
             return
         self.base_image = ImageProcessor.lower_quality(self.base_image)
