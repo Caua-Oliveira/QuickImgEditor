@@ -26,12 +26,12 @@ class TrayManager:
         self.icon_thread = threading.Thread(target=self.icon.run, daemon=True)
         self.icon_thread.start()
 
-    def toggle_visibility(self, icon, item):
+    def toggle_visibility(self):
         self.app.after(0, self.app.toggle_visibility)
 
-    def show_options(self, icon, item):
+    def show_options(self):
         self.app.after(0, self.app.open_options_page)
 
-    def exit_app(self, icon, item):
+    def exit_app(self):
         self.icon.stop()
         self.app.after(0, self.app.destroy)
