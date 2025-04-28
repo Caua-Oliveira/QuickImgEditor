@@ -9,7 +9,7 @@ SETTINGS_FILE = os.path.join(os.getenv('APPDATA'), 'ImageEditor', 'settings.json
 
 class SettingsManager:
     @staticmethod
-    def load():
+    def load() -> dict:
         try:
             with open(SETTINGS_FILE, 'r') as f:
                 return json.load(f)
@@ -42,6 +42,7 @@ class SettingsManager:
                 link.IconLocation = exe_path + ",0"
                 link.save()
             else:
-                if os.path.exists(shortcut): os.remove(shortcut)
+                if os.path.exists(shortcut):
+                    os.remove(shortcut)
         except Exception as e:
             logging.error(f"Startup setting failed: {str(e)}")
