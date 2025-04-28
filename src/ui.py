@@ -35,8 +35,7 @@ class ImageEditorUI(ctk.CTk):
         self.run_at_startup = settings.get('run_at_startup', False)
         SettingsManager.set_startup(self.run_at_startup)
 
-        # UI
-        ctk.set_appearance_mode("dark")
+        # UI components
         self.setup_ui()
         self.setup_bindings()
         self.setup_tray()
@@ -62,46 +61,77 @@ class ImageEditorUI(ctk.CTk):
         self.tray.run()
 
     def create_control_panel(self):
-        frame = ctk.CTkFrame(self)
-        frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
-        # Actions
-        for text, cmd in [
+        self.control_frame = ctk.CTkFrame(self)
+        self.control_frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
+
+        self.create_action_buttons()
+        self.create_processing_buttons()
+        self.create_resize_controls()
+        self.create_scale_controls()
+        self.create_export_buttons()
+
+    def create_action_buttons(self):
+        actions = [
             ("Load from Clipboard", self.load_from_clipboard),
             ("Choose Image", self.choose_image),
             ("Revert to Original", self.revert_to_original)
-        ]:
-            btn = ctk.CTkButton(frame, text=text, command=cmd)
+        ]
+        for text, cmd in actions:
+            btn = ctk.CTkButton(self.control_frame, text=text, command=cmd)
             btn.pack(pady=3, fill='x')
-        # Processing
-        proc = ctk.CTkFrame(frame)
-        proc.pack(pady=10, fill='x')
-        for text, cmd in [
+
+    def create_processing_buttons(self):
+        processing_frame = ctk.CTkFrame(self.control_frame)
+        processing_frame.pack(pady=10, fill='x')
+
+        effects = [
             ("Convert to Grayscale", self.convert_to_grayscale),
             ("Low Quality", self.low_quality)
-        ]:
-            btn = ctk.CTkButton(proc, text=text, command=cmd)
+        ]
+        for text, cmd in effects:
+            btn = ctk.CTkButton(processing_frame, text=text, command=cmd)
             btn.pack(pady=2, fill='x')
-        # Resize controls
-        resize = ctk.CTkFrame(frame)
-        resize.pack(pady=10, fill='x')
+
+    def create_resize_controls(self):
+        resize_frame = ctk.CTkFrame(self.control_frame)
+        resize_frame.pack(pady=10, fill='x')
+
+        # Width
         self.width_var = tk.StringVar()
+        ctk.CTkEntry(resize_frame, textvariable=self.width_var).pack(pady=2, fill='x')
+
+        # Height
         self.height_var = tk.StringVar()
-        ctk.CTkEntry(resize, textvariable=self.width_var).pack(pady=2, fill='x')
-        ctk.CTkEntry(resize, textvariable=self.height_var).pack(pady=2, fill='x')
-        ctk.CTkButton(resize, text="Resize", command=self.resize_image).pack(pady=5, fill='x')
-        # Scale slider
-        scale = ctk.CTkFrame(frame)
-        scale.pack(pady=10, fill='x')
-        self.scale_slider = ctk.CTkSlider(scale, from_=self.min_scale, to=self.max_scale, command=self.on_scale_slide)
+        ctk.CTkEntry(resize_frame, textvariable=self.height_var).pack(pady=2, fill='x')
+
+        ctk.CTkButton(resize_frame, text="Resize", command=self.resize_image).pack(pady=5, fill='x')
+
+    def create_scale_controls(self):
+        scale_frame = ctk.CTkFrame(self.control_frame)
+        scale_frame.pack(pady=10, fill='x')
+
+        self.scale_slider = ctk.CTkSlider(
+            scale_frame,
+            from_=self.min_scale,
+            to=self.max_scale,
+            command=self.on_scale_slide
+        )
         self.scale_slider.set(DEFAULT_SCALE)
         self.scale_slider.pack(side='left', expand=True, fill='x', padx=5)
-        self.scale_label = ctk.CTkLabel(scale, text=f"{DEFAULT_SCALE}%")
+
+        self.scale_label = ctk.CTkLabel(scale_frame, text=f"{DEFAULT_SCALE}%")
         self.scale_label.pack(side='left')
-        # Export
-        export = ctk.CTkFrame(frame)
-        export.pack(pady=10, fill='x')
-        for text, cmd in [("Copy Image", self.copy_to_clipboard), ("Save Image", self.save_image)]:
-            btn = ctk.CTkButton(export, text=text, command=cmd)
+
+    def create_export_buttons(self):
+        export_frame = ctk.CTkFrame(self.control_frame)
+        export_frame.pack(pady=10, fill='x')
+
+        actions = [
+            ("Copy Image", self.copy_to_clipboard),
+            ("Save Image", self.save_image)
+        ]
+        for text, cmd in actions:
+            btn = ctk.CTkButton(export_frame, text=text, command=cmd)
             btn.pack(pady=3, fill='x')
 
     def create_image_preview(self):
@@ -120,8 +150,10 @@ class ImageEditorUI(ctk.CTk):
         if img := ClipboardManager.get_image_from_clipboard():
             self._set_image(img)
             self.update_status("Loaded initial image from clipboard")
+        else:
+            self.update_status("No image in clipboard")
 
-    def _set_image(self, img):
+    def _set_image(self, img: Image.Image):
         self.original_image = img.copy()
         self.base_image = img.copy()
         self.processed_image = img.copy()
@@ -145,12 +177,13 @@ class ImageEditorUI(ctk.CTk):
         self.preview_label.configure(image=tkimg)
         self.preview_label.image = tkimg
 
-    def load_from_clipboard(self, event=None):
+    def load_from_clipboard(self):
         if img := ClipboardManager.get_image_from_clipboard():
             self._set_image(img)
             self.update_status("Image loaded from clipboard")
         else:
             self.update_status("No image in clipboard")
+
 
     def choose_image(self):
         path = filedialog.askopenfilename()
@@ -175,7 +208,7 @@ class ImageEditorUI(ctk.CTk):
     def low_quality(self):
         if not self.base_image:
             return
-        self.base_image = ImageProcessor.low_quality(self.base_image)
+        self.base_image = ImageProcessor.lower_quality(self.base_image)
         self.processed_image = self.base_image.copy()
         self._update_ui()
         self.update_status("Applied low quality")
@@ -188,7 +221,7 @@ class ImageEditorUI(ctk.CTk):
         self._update_ui()
         self.update_status("Reverted to original image")
 
-    def on_scale_slide(self, val):
+    def on_scale_slide(self, val: float):
         if not self.base_image or self.is_scaling:
             return
         self.is_scaling = True
@@ -216,7 +249,7 @@ class ImageEditorUI(ctk.CTk):
             logging.warning(f"Resize failed: {e}")
             self.update_status("Resize error")
 
-    def copy_to_clipboard(self, event=None):
+    def copy_to_clipboard(self):
         if not self.processed_image:
             return
         success = ClipboardManager.copy_image_to_clipboard(self.processed_image)
