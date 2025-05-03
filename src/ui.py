@@ -8,6 +8,7 @@ from PIL import Image
 from clipboard_manager import ClipboardManager
 from image_processor import ImageProcessor
 from settings import SettingsManager
+from src.changes_history import ChangesHistory
 from tray_manager import TrayManager
 
 THUMBNAIL_SIZE = (700, 700)
@@ -29,7 +30,9 @@ class ImageEditorUI(ctk.CTk):
 
         # Load settings
         settings = SettingsManager.load()
-        self.hotkey = settings.get('hotkey', 'ctrl+shift+b')
+        self.toggle_hotkey = settings.get('hotkey', 'ctrl+shift+b')
+        self.undo_hotkey = settings.get('undo_hotkey', 'ctrl+z')
+        self.redo_hotkey = settings.get('redo_hotkey', 'ctrl+y')
         self.min_scale = settings.get('min_scale', 10)
         self.max_scale = settings.get('max_scale', 200)
         self.run_at_startup = settings.get('run_at_startup', False)
@@ -41,6 +44,8 @@ class ImageEditorUI(ctk.CTk):
         self.setup_tray()
         self.load_initial_image()
 
+        self.changes_history = ChangesHistory()
+
     def setup_ui(self):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -51,7 +56,9 @@ class ImageEditorUI(ctk.CTk):
 
     def setup_bindings(self):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-        keyboard.add_hotkey(self.hotkey, self.toggle_visibility)
+        keyboard.add_hotkey(self.toggle_hotkey, self.toggle_visibility)
+        keyboard.add_hotkey(self.undo_hotkey, lambda: self.set_image(self.changes_history.undo()))
+        keyboard.add_hotkey(self.redo_hotkey, lambda: self.set_image(self.changes_history.redo()))
         self.bind("<Control-v>", lambda e: self.load_from_clipboard())
         self.bind("<Control-c>", lambda e: self.copy_to_clipboard())
 
@@ -147,40 +154,41 @@ class ImageEditorUI(ctk.CTk):
         self.status_var.set(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
     def load_initial_image(self):
-        if img := ClipboardManager.get_image_from_clipboard():
-            self._set_image(img)
-            self.update_status("Loaded initial image from clipboard")
-        else:
-            self.update_status("No image in clipboard")
+        self.load_from_clipboard()
 
-    def _set_image(self, img: Image.Image):
+    def set_image(self, img: Image.Image):
+        if img is None:
+            return
         self.original_image = img.copy()
         self.base_image = img.copy()
         self.processed_image = img.copy()
         self.current_scale = DEFAULT_SCALE
-        self._update_ui()
+        self.update_ui()
 
-    def _update_ui(self):
-        self._update_preview()
+    def update_ui(self):
+        self.update_preview()
         self.width_var.set(str(self.processed_image.width))
         self.height_var.set(str(self.processed_image.height))
         self.scale_slider.configure(from_=self.min_scale, to=self.max_scale)
         self.scale_slider.set(DEFAULT_SCALE)
         self.scale_label.configure(text=f"{DEFAULT_SCALE}%")
 
-    def _update_preview(self):
+    def update_preview(self):
         if not self.processed_image:
             return
+
         preview = self.processed_image.copy()
         preview.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+
         tkimg = ctk.CTkImage(light_image=preview, size=preview.size)
         self.preview_label.configure(image=tkimg)
         self.preview_label.image = tkimg
 
     def load_from_clipboard(self):
         if img := ClipboardManager.get_image_from_clipboard():
-            self._set_image(img)
+            self.set_image(img)
             self.update_status("Image loaded from clipboard")
+            self.changes_history.add(img)
         else:
             self.update_status("No image in clipboard")
 
@@ -191,8 +199,9 @@ class ImageEditorUI(ctk.CTk):
             return
         try:
             img = Image.open(path)
-            self._set_image(img)
+            self.set_image(img)
             self.update_status(f"Loaded: {path}")
+            self.changes_history.add(img)
         except Exception as e:
             logging.warning(f"Failed loading image: {e}")
             self.update_status("Error loading image")
@@ -202,7 +211,8 @@ class ImageEditorUI(ctk.CTk):
             return
         self.base_image = ImageProcessor.to_grayscale(self.base_image)
         self.processed_image = self.base_image.copy()
-        self._update_ui()
+        self.changes_history.add(self.processed_image)
+        self.update_ui()
         self.update_status("Converted to grayscale")
 
     def lower_quality(self):
@@ -210,7 +220,8 @@ class ImageEditorUI(ctk.CTk):
             return
         self.base_image = ImageProcessor.lower_quality(self.base_image)
         self.processed_image = self.base_image.copy()
-        self._update_ui()
+        self.changes_history.add(self.processed_image)
+        self.update_ui()
         self.update_status("Applied low quality")
 
     def revert_to_original(self):
@@ -218,23 +229,39 @@ class ImageEditorUI(ctk.CTk):
             return
         self.base_image = self.original_image.copy()
         self.processed_image = self.original_image.copy()
-        self._update_ui()
+        self.changes_history.add(self.processed_image)
+        self.update_ui()
         self.update_status("Reverted to original image")
 
     def on_scale_slide(self, val: float):
-        if not self.base_image or self.is_scaling:
+        # only update the numbers immediately
+        if not self.base_image:
             return
-        self.is_scaling = True
-        try:
-            scale = float(val)
-            self.current_scale = scale
-            self.processed_image = ImageProcessor.scale(self.base_image, scale / DEFAULT_SCALE)
-            self.scale_label.configure(text=f"{int(scale)}%")
-            self._update_preview()
-            self.width_var.set(str(self.processed_image.width))
-            self.height_var.set(str(self.processed_image.height))
-        finally:
-            self.is_scaling = False
+
+        scale = float(val)
+        self.current_scale = scale
+        self.scale_label.configure(text=f"{int(scale)}%")
+
+        # compute and show the new dimensions
+        width = int(self.base_image.width * scale / DEFAULT_SCALE)
+        height = int(self.base_image.height * scale / DEFAULT_SCALE)
+        self.width_var.set(str(width))
+        self.height_var.set(str(height))
+
+        # cancel any pending preview‐update job, then schedule a new one
+        if hasattr(self, 'preview_job'):
+            self.after_cancel(self.preview_job)
+
+        def do_preview():
+            # this will actually scale the full image and then show it
+            self.processed_image = ImageProcessor.scale(
+                self.base_image,
+                self.current_scale / DEFAULT_SCALE
+            )
+            self.update_preview()
+
+        # wait 300ms after the last slide event before running it
+        self.preview_job = self.after(300, do_preview)
 
     def resize_image(self):
         if not self.base_image:
@@ -243,7 +270,8 @@ class ImageEditorUI(ctk.CTk):
             w, h = int(self.width_var.get()), int(self.height_var.get())
             self.base_image = ImageProcessor.resize(self.base_image, w, h)
             self.processed_image = self.base_image.copy()
-            self._update_ui()
+            self.changes_history.add(self.processed_image)
+            self.update_ui()
             self.update_status(f"Resized to {w}x{h}")
         except Exception as e:
             logging.warning(f"Resize failed: {e}")
@@ -287,7 +315,7 @@ class ImageEditorUI(ctk.CTk):
         hotkey_frame.pack(fill='x', pady=5)
         ctk.CTkLabel(hotkey_frame, text="Toggle Visibility Hotkey:").pack(side='left')
         self.hotkey_entry = ctk.CTkEntry(hotkey_frame)
-        self.hotkey_entry.insert(0, self.hotkey)
+        self.hotkey_entry.insert(0, self.toggle_hotkey)
         self.hotkey_entry.pack(side='right', fill='x', expand=True)
 
         # Scale settings
@@ -313,9 +341,9 @@ class ImageEditorUI(ctk.CTk):
         try:
             # Hotkey
             new_hotkey = self.hotkey_entry.get().lower()
-            keyboard.remove_hotkey(self.hotkey)
+            keyboard.remove_hotkey(self.toggle_hotkey)
             keyboard.add_hotkey(new_hotkey, self.toggle_visibility)
-            self.hotkey = new_hotkey
+            self.toggle_hotkey = new_hotkey
 
             # Scale range
             new_min = max(1, int(self.min_scale_entry.get()))
@@ -330,7 +358,7 @@ class ImageEditorUI(ctk.CTk):
 
             # Persist
             SettingsManager.save({
-                'hotkey': self.hotkey,
+                'hotkey': self.toggle_hotkey,
                 'min_scale': self.min_scale,
                 'max_scale': self.max_scale,
                 'run_at_startup': self.run_at_startup
