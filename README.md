@@ -1,36 +1,49 @@
 # QuickImgEditor
 
-QuickImgEditor is a lightweight image editing application built with Python and CustomTkinter. It provides a quick and easy interface to load, edit, and export images with features like scaling, resizing, grayscale conversion, and a low-quality effect. The app also integrates with the Windows clipboard and system tray for a streamlined workflow.
+**QuickImgEditor** is a lightweight, fast, and user-friendly image editing tool built with Python and CustomTkinter.  
+Effortlessly load, edit, and export images with essential editing features—all from a modern, minimal interface.
 
-## Features
+---
 
-- **Clipboard Integration:**  
-  - Load images directly from the clipboard.
-  - Copy edited images back to the clipboard.
-  
-- **Basic Image Processing:**  
-  - Scale images with a slider control.
-  - Resize images by specifying custom dimensions.
-  - Convert images to grayscale.
-  - Apply a "low quality" effect.
-  
-- **User-Friendly Interface:**  
-  - Built with CustomTkinter for a modern UI.
-  - Real-time preview of image changes.
-  - Status bar displays operation logs and timestamps.
-  
-- **System Tray Support:**  
-  - Minimize the app to the system tray.
-  - Toggle visibility using a custom hotkey (default: `ctrl+shift+b`).
-  - Access options and exit the app via the tray icon menu.
-  
-- **Startup Configuration:**  
-  - Option to run the application at Windows startup.
-  - Save and load custom settings including hotkey and scale limits.
+## 🚀 Features
 
-## Prerequisites
+- **Clipboard Integration**
+  - Load images directly from your clipboard
+  - Copy edited images back to the clipboard with a click
 
-Ensure you have Python 3.7 or higher installed. The following Python packages are required:
+- **Essential Image Editing**
+  - Scale images using a simple slider
+  - Resize images to custom dimensions
+  - Convert images to grayscale
+  - Apply a "low quality" effect for quick compression
+
+- **Modern, Intuitive UI**
+  - Built with CustomTkinter for a clean, modern look
+  - Real-time image preview
+  - Status bar with logs and timestamps
+
+- **System Tray Support**
+  - Minimize the app to the system tray
+  - Toggle visibility with a global hotkey (`Ctrl+Shift+B` by default)
+  - Access options or exit using the tray icon menu
+
+- **Customizable Startup & Settings**
+  - Option to launch at Windows startup
+  - Save/load preferences (hotkey, scale limits, etc.)
+
+---
+
+## 🖼️ Preview
+
+![QuickImgEditor Screenshot](https://github.com/user-attachments/assets/33f7fa77-3f00-415b-a543-e9aa01df4f97)
+
+---
+
+## 🛠 Requirements
+
+- **Python 3.7+**
+
+### Python Packages
 
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
 - [Pillow](https://pillow.readthedocs.io/)
@@ -38,8 +51,28 @@ Ensure you have Python 3.7 or higher installed. The following Python packages ar
 - [pywin32](https://github.com/mhammond/pywin32)
 - [keyboard](https://github.com/boppreh/keyboard)
 
+Install all dependencies with:
+```bash
+pip install customtkinter pillow pystray pywin32 keyboard
+```
 
-![image](https://github.com/user-attachments/assets/33f7fa77-3f00-415b-a543-e9aa01df4f97)
+---
 
+## ⚡ Quick Start
 
+1. **Clone this repository**
+   ```bash
+   git clone https://github.com/Caua-Oliveira/QuickImgEditor.git
+   cd QuickImgEditor
+   ```
+2. **Install dependencies**  
+   See the requirements section above.
 
+3. **Run the application**
+   ```bash
+   python main.py
+   ```
+
+---
+
+*Questions or suggestions? Open an issue or start a discussion!*
